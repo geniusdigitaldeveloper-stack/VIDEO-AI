@@ -21,7 +21,15 @@ SRC_DUR = 126.29
 
 # ---------------------------------------------------------------- transcript
 T = json.load(open(os.path.join(ROOT, "transcript.json")))
+# tanda permulaan ayat: selepas . ? ! , atau awal segmen yang whisper sudah huruf-besarkan / segmen awal tanpa tanda baca
+_after = True
+for _seg in T:
+    for _k, _w in enumerate(_seg["words"]):
+        _raw = _w["w"].strip()
+        _w["ss"] = _after or (_k == 0 and (_raw[:1].isupper() or _seg["start"] < 25.5))
+        _after = _raw[-1:] in ".?!"
 words = [w for s in T for w in s["words"]]
+PROPER = {"chrome": "Chrome", "ctrl": "Ctrl", "c": "C", "v": "V", "google": "Google"}
 FIX = {"mock": "more", "bagian": "Bahagian", "buat": None}  # 'buat turun' -> 'muat turun' handled below
 EN = set("""ok okay first set up setup email scroll link copy ctrl direct suggestion download paste enter auto
 file extract so open more info run anyway device only for me next browser install finish live stream key
@@ -204,7 +212,7 @@ ZOOMS = [
     (84.2, 107.4, 960, 580, 1.30),
     (113.6, 120.8, 1500, 300, 1.25),
 ]
-HOOK_TEXT = ("SETUP GLOBAL STREAMER", "siap dalam 2 minit — ikut je step ni")
+HOOK_TEXT = ("SETUP GLOBAL STREAMER", "siap dalam 2 minit")
 CLICK_OUT = mh(65.85)
 
 def zoom_xy(cx, cy, s):
@@ -233,6 +241,14 @@ def subtitle_chunks():
             if low == "bagian": txt = "bahagian"
             if low == "buat" and abs(w["s"] - 20.9) < 1.0: txt = "muat"
             low = txt.lower()
+            txt = PROPER.get(low, low)
+            if w.get("ss"):
+                txt = txt[:1].upper() + txt[1:]
+            if txt.startswith("-") and cur:
+                cur[-1]["t"] += txt; cur[-1]["e"] = mapper(w["e"]); prev_e = w["e"]
+                continue
+            if w.get("ss"):
+                flush()
             if prev_e is not None and (w["s"] - prev_e > 0.45 or len(cur) >= 4):
                 flush()
             cur.append({"t": txt, "en": low in EN, "s": mapper(w["s"]), "e": mapper(w["e"])})
@@ -250,10 +266,13 @@ def subtitle_chunks():
         s = c[0]["s"]; e = c[-1]["e"] + 0.25
         if i + 1 < len(chunks) and i + 1 != nh:
             e = min(e, chunks[i + 1][0]["s"])
-        if i + 1 == nh:
-            e = min(e, HOOK_DUR - 0.02)
-        e = max(e, s + 0.3)
+        if i < nh:
+            e = min(e, CLICK_OUT - 0.05)
+            if s >= e:
+                s = e = -1
+        if s >= 0 and not (i < nh): e = max(e, s + 0.3)
         out.append({"s": q(s), "e": q(e), "w": [(x["t"], x["en"]) for x in c]})
+    out = [c for c in out if c["s"] >= 0]
     # paksa tiada tindihan
     for a, b in zip(out, out[1:]):
         if a["e"] > b["s"]:
@@ -317,6 +336,22 @@ def build_html():
       .clip {{ position: absolute; left: 0; top: 0; }}
 
       /* pentas yang di-zoom: rakaman skrin + ring + callout bergerak bersama */
+      /* latar: gradient gaming beranimasi (blob warna hanyut perlahan + grid halus) */
+      #bg {{ position: absolute; inset: 0; overflow: hidden; background: #070912; }}
+      .blob {{ position: absolute; width: 1500px; height: 1500px; border-radius: 50%; will-change: transform; }}
+      #b0 {{ left: -600px; top: -700px; background: radial-gradient(circle, rgba(37,99,235,.85) 0%, rgba(37,99,235,.35) 35%, rgba(37,99,235,0) 68%); }}
+      #b1 {{ left: 1000px; top: -500px; background: radial-gradient(circle, rgba(147,51,234,.80) 0%, rgba(147,51,234,.30) 35%, rgba(147,51,234,0) 68%); }}
+      #b2 {{ left: 300px; top: 250px; background: radial-gradient(circle, rgba(6,182,212,.55) 0%, rgba(6,182,212,.20) 35%, rgba(6,182,212,0) 66%); }}
+      #b3 {{ left: 900px; top: 200px; background: radial-gradient(circle, rgba(225,29,72,.60) 0%, rgba(225,29,72,.22) 35%, rgba(225,29,72,0) 66%); }}
+      #grid {{ position: absolute; left: -120px; top: -120px; width: 2160px; height: 1320px; opacity: .10;
+               background-image: linear-gradient(rgba(255,255,255,.9) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.9) 1px, transparent 1px);
+               background-size: 60px 60px; }}
+      #shade {{ position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,9,18,.30) 0%, rgba(7,9,18,.10) 45%, rgba(7,9,18,.62) 100%); }}
+
+      /* bingkai: rakaman RAW di tengah-atas (1600x900), jalur bawah khas untuk subtitle */
+      #frame {{ position: absolute; left: 192px; top: 52px; width: 1536px; height: 864px; overflow: hidden; border-radius: 16px;
+                background: #000; box-shadow: 0 0 0 1px rgba(255,255,255,.10), 0 18px 50px rgba(0,0,0,.55); }}
+      #fit {{ position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform: scale(0.8); transform-origin: 0 0; }}
       #stage {{ position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; will-change: transform; }}
       /* gred neutral, sangat halus: skrin kekal nampak asli */
       #base {{ width: 1920px; height: 1080px; object-fit: cover; filter: contrast(1.035) saturate(1.03) brightness(0.995); }}
@@ -336,7 +371,7 @@ def build_html():
       .co .l {{ color: #fff; font: 600 22px/1 "Poppins", sans-serif; letter-spacing: .01em; }}
 
       /* subtitle ucapan: Poppins SemiBold, #38BDF8, Inggeris italic — di bawah frame */
-      #subs {{ position: absolute; left: 0; right: 0; bottom: 64px; height: 70px; }}
+      #subs {{ position: absolute; left: 0; right: 0; bottom: 50px; height: 70px; }}
       .sub {{ position: absolute; left: 0; right: 0; bottom: 0; text-align: center; opacity: 0;
               font: 600 50px/1.25 "Poppins", sans-serif; color: var(--sky);
               -webkit-text-stroke: 6px var(--ink); paint-order: stroke fill;
@@ -344,20 +379,19 @@ def build_html():
       .sub i {{ font-style: italic; }}
 
       /* hook */
-      #hook {{ position: absolute; left: 90px; top: 500px; opacity: 0; padding: 38px 48px 42px; border-radius: 28px;
-               background: rgba(14,17,22,.90); box-shadow: 0 18px 50px rgba(0,0,0,.35); transform-origin: 0 100%; }}
-      #hook .h1 {{ font: 800 112px/1.04 "Poppins", sans-serif; color: #fff; letter-spacing: -0.02em; }}
-      #hook .h2 {{ margin-top: 22px; display: inline-block; padding: 10px 22px; border-radius: 12px; background: var(--sky);
-                   color: var(--ink); font: 600 40px/1.15 "Poppins", sans-serif; }}
+      #hook {{ position: absolute; left: 0; right: 0; bottom: 34px; height: 100px; opacity: 0; display: flex;
+               align-items: center; justify-content: center; gap: 28px; white-space: nowrap; }}
+      #hook .h1 {{ font: 800 74px/1 "Poppins", sans-serif; color: #fff; letter-spacing: -0.015em; }}
+      #hook .h2 {{ padding: 12px 22px; border-radius: 12px; background: var(--sky); color: var(--ink); font: 600 34px/1.1 "Poppins", sans-serif; }}
       #dip {{ position: absolute; inset: 0; background: var(--ground); opacity: 0; }}
 
       /* logo popup */
-      #logo {{ position: absolute; left: 22px; top: 22px; width: 128px; height: 128px; opacity: 0;
+      #logo {{ position: absolute; left: 132px; top: 8px; width: 104px; height: 104px; opacity: 0;
                filter: drop-shadow(0 6px 14px rgba(0,0,0,.35)); }}
       #logo img, #outro .lg img {{ width: 100%; height: 100%; object-fit: cover; display: block; }}
 
       /* outro */
-      #outro {{ position: absolute; inset: 0; background: var(--ground); opacity: 0; display: flex; flex-direction: column;
+      #outro {{ position: absolute; inset: 0; opacity: 0; display: flex; flex-direction: column;
                 align-items: center; justify-content: center; }}
       #outro .lg {{ width: 420px; height: 420px; filter: drop-shadow(0 20px 50px rgba(0,0,0,.5)); }}
       #outro .t1 {{ margin-top: 26px; font: 800 76px/1 "Poppins", sans-serif; color: #fff; letter-spacing: -0.01em; }}
@@ -366,13 +400,15 @@ def build_html():
   </head>
   <body>
     <div id="root" data-composition-id="main" data-start="0" data-duration="{TOTAL:.3f}" data-width="1920" data-height="1080" data-fps="{FPS}">
+      <div id="bg" data-layout-ignore><div class="blob" id="b0"></div><div class="blob" id="b1"></div><div class="blob" id="b2"></div><div class="blob" id="b3"></div><div id="grid"></div><div id="shade"></div></div>
+      <div id="frame"><div id="fit">
       <div id="stage">
         <video id="base" class="clip" data-start="0" data-duration="{main_d:.3f}" data-track-index="0" data-has-audio="true" src="assets/base.mp4" playsinline></video>
         {"".join(step_html)}
       </div>
-      <div id="dip"></div>
-      <div id="hook"><div class="h1">{esc(HOOK_TEXT[0]).replace(" GLOBAL", "<br />GLOBAL")}</div><div class="h2">{esc(HOOK_TEXT[1])}</div></div>
-      <div id="subs">{"".join(sub_html)}</div>
+      </div><div id="dip"></div></div>
+      <div id="hook" data-layout-allow-overlap><div class="h1">{esc(HOOK_TEXT[0])}</div><div class="h2">{esc(HOOK_TEXT[1])}</div></div>
+      <div id="subs" data-layout-allow-overlap>{"".join(sub_html)}</div>
       <div id="logo"><img src="assets/logo.png" alt="Global Streamer" /></div>
       <div id="outro">
         <div class="lg"><img src="assets/logo.png" alt="Global Streamer" /></div>
@@ -393,13 +429,24 @@ def build_html():
       const LOGOS = {json.dumps(logos)};
       const HOOK_DUR = {HOOK_DUR:.3f}, CLICK = {CLICK_OUT:.3f}, MAIN_END = {main_d:.3f}, TOTAL = {TOTAL:.3f};
 
+      // ---- latar gradient: hanyut perlahan, deterministik, dari awal hingga outro
+      [[0, 420, 300, 0.0], [1, -460, 340, 1.7], [2, 380, -260, 3.1], [3, -420, -240, 4.6]].forEach(([i, ax, ay, ph]) => {{
+        const el = "#b" + i, STEP = 6;
+        tl.set(el, {{ x: ax * Math.sin(ph), y: ay * Math.cos(ph * 1.3), scale: 1 }}, 0);
+        for (let t = 0, k = 1; t < TOTAL; t += STEP, k++) {{
+          const a = ph + k * (0.9 + i * 0.13);
+          tl.to(el, {{ x: ax * Math.sin(a), y: ay * Math.cos(a * 1.3), scale: 1 + 0.18 * Math.sin(a * 0.7), duration: STEP, ease: "sine.inOut" }}, t);
+        }}
+      }});
+      tl.to("#grid", {{ x: 60, y: 60, duration: TOTAL, ease: "none" }}, 0);
+
       // ---- hook: push-in sinematik ke butang Open, punch masa klik, teks pop-in
       tl.set("#stage", {{ x: 0, y: 0, scale: 1 }}, 0);
       tl.to("#stage", {{ x: {hz[0]}, y: {hz[1]}, scale: 1.55, duration: CLICK - 0.1, ease: "power2.inOut" }}, 0.05);
       tl.to("#stage", {{ x: {hz2[0]}, y: {hz2[1]}, scale: 1.72, duration: 0.22, ease: "power3.out" }}, CLICK);
-      tl.fromTo("#hook", {{ opacity: 0, scale: 0.72, y: 40 }}, {{ opacity: 1, scale: 1, y: 0, duration: 0.42, ease: "back.out(1.9)" }}, CLICK - 0.02);
+      tl.fromTo("#hook", {{ opacity: 0, scale: 0.72, y: 30 }}, {{ opacity: 1, scale: 1, y: 0, duration: 0.42, ease: "back.out(1.9)" }}, CLICK - 0.02);
       tl.to("#dip", {{ opacity: 1, duration: 0.2, ease: "power1.in" }}, HOOK_DUR - 0.2);
-      tl.set("#hook", {{ opacity: 0 }}, HOOK_DUR);
+      tl.to("#hook", {{ opacity: 0, duration: 0.2, ease: "power1.in" }}, HOOK_DUR - 0.2);
       tl.set("#stage", {{ x: 0, y: 0, scale: 1 }}, HOOK_DUR);
       tl.to("#dip", {{ opacity: 0, duration: 0.3, ease: "power1.out" }}, HOOK_DUR);
 
@@ -426,6 +473,7 @@ def build_html():
 
       // ---- subtitle
       SUBS.forEach((c, i) => {{
+        if (c[0] < 0) return;
         tl.set("#sub" + i, {{ opacity: 1 }}, c[0]);
         tl.set("#sub" + i, {{ opacity: 0 }}, c[1]);
       }});
@@ -439,7 +487,8 @@ def build_html():
       }});
 
       // ---- outro
-      tl.fromTo("#outro", {{ opacity: 0 }}, {{ opacity: 1, duration: 0.6, ease: "power2.inOut" }}, MAIN_END - 0.55);
+      tl.to("#frame", {{ opacity: 0, scale: 0.94, duration: 0.6, ease: "power2.inOut" }}, MAIN_END - 0.6);
+      tl.fromTo("#outro", {{ opacity: 0 }}, {{ opacity: 1, duration: 0.6, ease: "power2.inOut" }}, MAIN_END - 0.3);
       tl.fromTo("#outro .lg", {{ scale: 0.55, opacity: 0 }}, {{ scale: 1, opacity: 1, duration: 1.1, ease: "power3.out" }}, MAIN_END - 0.15);
       tl.fromTo("#outro .t1", {{ y: 34, opacity: 0 }}, {{ y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }}, MAIN_END + 0.45);
       tl.fromTo("#outro .t2", {{ y: 24, opacity: 0 }}, {{ y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }}, MAIN_END + 0.8);
