@@ -70,7 +70,9 @@ def build_edl():
 
 EDL = build_edl()
 HOOK_DUR = HOOK[1] - HOOK[0]
-FPS = 30
+FPS = 30          # grid masa overlay
+BASE_FPS = 50     # kekalkan fps asal rakaman supaya gerakan mouse licin
+OUT_FPS = 120     # fps render akhir
 def q(x):  # kunci pada grid frame
     return round(x * FPS) / FPS
 
@@ -106,12 +108,12 @@ def render_base():
     for i, (s, e, v) in enumerate(parts):
         out = os.path.join(tmp, f"s{i:03d}.mp4")
         d = (e - s) / v
-        vf = f"setpts=(PTS-STARTPTS)/{v},fps={FPS},scale=2560:1440:flags=lanczos,unsharp=5:5:0.45:5:5:0.0,format=yuv420p"
+        vf = f"setpts=(PTS-STARTPTS)/{v},fps={BASE_FPS},scale=2560:1440:flags=lanczos,unsharp=5:5:0.45:5:5:0.0,format=yuv420p"
         af = "asetpts=PTS-STARTPTS" + (f",atempo={v},volume=0.35" if v != 1.0 else "")
         af += f",afade=t=in:d=0.02,afade=t=out:st={max(0, d - 0.03):.3f}:d=0.03,aresample=48000"
         subprocess.check_call(["ffmpeg", "-v", "error", "-y", "-ss", f"{s:.3f}", "-t", f"{e - s:.3f}", "-i", SRC,
                                "-vf", vf, "-af", af, "-c:v", "libx264", "-preset", "medium", "-crf", "15",
-                               "-threads", "3", "-g", str(FPS), "-c:a", "pcm_s16le", "-t", f"{d:.3f}",
+                               "-threads", "3", "-g", str(BASE_FPS), "-c:a", "pcm_s16le", "-t", f"{d:.3f}",
                                out.replace(".mp4", ".mov")])
         lst.append(f"file '{out.replace('.mp4', '.mov')}'")
     open(os.path.join(tmp, "list.txt"), "w").write("\n".join(lst))
@@ -399,7 +401,7 @@ def build_html():
     </style>
   </head>
   <body>
-    <div id="root" data-composition-id="main" data-start="0" data-duration="{TOTAL:.3f}" data-width="1920" data-height="1080" data-fps="{FPS}">
+    <div id="root" data-composition-id="main" data-start="0" data-duration="{TOTAL:.3f}" data-width="1920" data-height="1080" data-fps="{OUT_FPS}">
       <div id="bg" data-layout-ignore><div class="blob" id="b0"></div><div class="blob" id="b1"></div><div class="blob" id="b2"></div><div class="blob" id="b3"></div><div id="grid"></div><div id="shade"></div></div>
       <div id="frame"><div id="fit">
       <div id="stage">
