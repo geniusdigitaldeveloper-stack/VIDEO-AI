@@ -27,7 +27,7 @@ Video biasa = gabungan: aset AI dari Higgsfield dimasukkan sebagai clip/`<Video>
 
 1. **Skrip & storyboard** - `video-script-bm` / `short-form-video-script`, `video-hook-library`, `video-storyboard`. Tandakan setiap beat dengan tool yang dipilih ikut jadual.
 2. **Aset AI (Higgsfield)** - prompt visual dalam EN, nisbah 9:16 / 16:9, tempoh. Banyak aset: `*_batch` -> `jobs_wait` -> satu `show_generation_by_ids`. Simpan fail dalam `assets/` dan rekod prompt + job id dalam `assets/SOURCES.md`.
-3. **Komposisi** - Hyperframes (`npx hyperframes init` / `preview` / `render -o out/video.mp4`) atau Remotion (`npx remotion studio` / `render`). Kapsyen & SFX ikut `video-sound-and-captions`. Hook bergerak dalam 0.5 s pertama.
+3. **Komposisi** - Hyperframes (`npx hyperframes init` / `preview` / `render -o out/video.mp4`) atau Remotion (`npx remotion studio` / `render`). Subtitle ucapan WAJIB ikut `video-subtitle-style` (Poppins SemiBold, biru air cerah, Inggeris italic); kapsyen & SFX ikut `video-sound-and-captions`. Hook bergerak dalam 0.5 s pertama.
 4. **Semak & render** - pratonton, semak sync suara, render. Pilihan: `virality_predictor`.
 
 ## Kredit Higgsfield
