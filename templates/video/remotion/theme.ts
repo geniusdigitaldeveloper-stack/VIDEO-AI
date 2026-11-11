@@ -18,4 +18,6 @@ export const subtitle = {
   size: 64,
   bottom: 260, // safe zone bawah
   englishItalic: true,
+  // Arab: Traditional Arabic, regular, tanpa bold/italic, warna sama
+  arabic: {family: "'Traditional Arabic'", fallback: "Amiri", weight: 400, size: 72},
 };
