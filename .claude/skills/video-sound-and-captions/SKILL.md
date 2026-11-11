@@ -7,7 +7,8 @@ description: Reka bunyi (SFX, muzik) dan gaya kapsyen Bahasa Melayu untuk video 
 
 **Kapsyen**
 - Perkataan demi perkataan, perkataan semasa diserlahkan (warna aksen), 2-4 perkataan satu baris.
-- Fon tebal, kontras tinggi, kekal dalam safe zone (elak 220px bawah & 150px atas untuk UI TikTok).
+- **Gaya tetap: ikut skill `video-subtitle-style` (Poppins SemiBold, biru air cerah `#38BDF8`, perkataan Inggeris italic).** Jangan guna fon/warna lain untuk subtitle ucapan.
+- Kontras tinggi, kekal dalam safe zone (elak 220px bawah & 150px atas untuk UI TikTok).
 - Ejaan Melayu piawai santai; jangan tukar kepada ejaan Indonesia.
 
 **Bunyi**
