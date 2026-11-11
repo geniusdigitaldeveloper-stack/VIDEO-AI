@@ -99,4 +99,4 @@ Templat tambahan: `templates/video/` (dokumen skrip/storyboard/senarai semak dan
 | `video` | When the user wants to create, generate, or produce video content using AI tools or progra... |
 | `free-llm-apis` | Pick and configure free LLM API providers. |
 - Anthropic cloud skills: docs, docx, pdf, pptx, xlsx, google-workspace, import-memory, morning, setup-writing-style, skill-creator, session-start-hook.
-- video-subtitle-style: gaya tetap subtitle ucapan (Poppins SemiBold, biru air cerah, Inggeris italic).
+- video-subtitle-style: gaya tetap subtitle ucapan (Poppins SemiBold, biru air cerah, Inggeris italic, Arab = Traditional Arabic).
