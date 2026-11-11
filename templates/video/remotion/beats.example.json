@@ -1,0 +1,6 @@
+[
+  {"type": "kinetic", "from": 0, "duration": 2.5, "props": {"text": "Jangan buat video macam ni lagi", "highlight": ["jangan"]}},
+  {"type": "counter", "from": 2.5, "duration": 3, "props": {"value": 87, "suffix": "%", "label": "penonton tinggalkan video dalam 3 saat"}},
+  {"type": "steps", "from": 5.5, "duration": 6, "props": {"steps": ["Tulis hook", "Rakam suara", "Bina animasi"]}},
+  {"type": "comparison", "from": 11.5, "duration": 5, "props": {"leftTitle": "Biasa", "rightTitle": "Cara baru", "left": ["Intro panjang", "Teks kecil"], "right": ["Terus hook", "Teks besar"]}}
+]
