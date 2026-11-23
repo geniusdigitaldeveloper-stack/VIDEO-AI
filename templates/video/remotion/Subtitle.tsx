@@ -1,5 +1,5 @@
 import React from "react";
-import {AbsoluteFill, useCurrentFrame, useVideoConfig} from "remotion";
+import {AbsoluteFill, spring, useCurrentFrame, useVideoConfig} from "remotion";
 import {loadFont as loadNormal} from "@remotion/google-fonts/Poppins";
 import {loadFont as loadArabic} from "@remotion/google-fonts/Amiri";
 import {subtitle} from "./theme";
@@ -31,6 +31,9 @@ export const Subtitle: React.FC<{words: Word[]; perLine?: number}> = ({words, pe
       <div style={{textAlign: "center", padding: "0 60px", lineHeight: 1.25}}>
         {line.map((w, i) => {
           const ar = w.ar || isArabic(w.text);
+          // Animasi tetap: pop per perkataan (spring) tepat masa disebut
+          const f = frame - Math.round(w.start * fps);
+          const p = f < 0 ? 0 : spring({frame: f, fps, config: {damping: 12, stiffness: 180, mass: 0.6}});
           return (
           <span
             key={lineStart + i}
@@ -44,6 +47,9 @@ export const Subtitle: React.FC<{words: Word[]; perLine?: number}> = ({words, pe
               WebkitTextStroke: `${subtitle.stroke}px ${subtitle.strokeColor}`,
               paintOrder: "stroke fill",
               marginRight: 16,
+              display: "inline-block",
+              opacity: Math.min(1, p * 1.5),
+              transform: `translateY(${(1 - p) * 18}px) scale(${0.6 + 0.4 * p})`,
             }}
           >
             {w.text}

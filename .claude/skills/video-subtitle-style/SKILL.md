@@ -23,6 +23,19 @@ Terpakai pada **subtitle/kapsyen ucapan user sahaja**. Font infografik, tajuk da
 5. 2-4 perkataan satu baris; susunan lain ikut `video-sound-and-captions`.
 6. Font: guna Poppins (Google Fonts). Remotion: `@remotion/google-fonts/Poppins` dengan weight `600`, style `normal` dan `italic`. ffmpeg/ASS: pasang/letak fail Poppins-SemiBold dan Poppins-SemiBoldItalic, `Bold=0`.
 
+## Animasi tetap (subtitle)
+**Pop per perkataan (spring).** Setiap perkataan muncul tepat pada masa ia disebut (ikut word timestamp): opacity 0→1, scale 0.6→1, naik 18 px→0, ~0.42 s, easing spring/overshoot lembut (GSAP `back.out(2.4)`; Remotion `spring({damping: 12, stiffness: 180, mass: 0.6})`). Perkataan yang belum disebut kekal tempatnya (tidak dibuang dari layout, hanya `opacity:0`) supaya baris tak melompat. Baris 2-4 perkataan; baris lama hilang bila baris baru masuk. Teks Arab pop sebagai satu unit.
+- **Teks grafik** (keyword besar/kinetic): pop huruf satu-satu dengan spring (`elastic.out(1,0.55)`, stagger ~0.025 s), settle lembut. Kad mini/label: masuk dengan `back.out(1.6)`.
+
+## Tema teks penuh (grafik juga)
+Bila user minta "tema teks aku", **semua teks dalam video** (keyword, kad mini, kaunter nombor, label callout) guna gaya yang sama: Poppins SemiBold 600, `#38BDF8`, outline gelap `#0B1020` (`-webkit-text-stroke` + `paint-order: stroke fill`), soft drop-shadow. Kotak kad kekal kaca gelap separa lut sinar.
+
+## Hyperframes
+Setiap perkataan = `<span class="w" data-t="START">`, CSS `.w{display:inline-block}`, kemudian:
+```js
+document.querySelectorAll(".sub .w").forEach(w=>tl.fromTo(w,{opacity:0,scale:0.6,y:18},{opacity:1,scale:1,y:0,duration:0.42,ease:"back.out(2.4)"},+w.dataset.t));
+```
+
 ## Remotion
 Guna komponen `templates/video/remotion/Subtitle.tsx` dan pemalar `subtitle` dalam `theme.ts`. Format perkataan:
 ```json
