@@ -13,6 +13,8 @@ export const subtitle = {
   family: "Poppins",
   weight: 600, // SemiBold, bukan Bold
   color: "#38BDF8", // biru air cerah
+  positive: "#4ADE80", // perkataan kunci baik (hijau)
+  negative: "#F87171", // perkataan kunci buruk (merah)
   strokeColor: "#0B1020",
   stroke: 5,
   size: 64,
